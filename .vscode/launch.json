@@ -11,6 +11,12 @@
             "program": "${file}"
         },
         {
+            "name": "Python: Main algorithm",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main_algorithm.py"
+        },
+        {
             "name": "Python: Attach",
             "type": "python",
             "request": "attach",
