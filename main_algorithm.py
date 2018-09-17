@@ -22,5 +22,5 @@ def ens(edges, threshold, nodes):
 
   return ST
 
-# pprint(ens(edges, threshold, nodes))
-ens(edges, threshold, nodes)
+pprint(ens(edges, threshold, nodes))
+# ens(edges, threshold, nodes)
