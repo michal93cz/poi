@@ -37,59 +37,67 @@ select * from planet_osm_line where osm_id=376047788
 
 
 
+OSTATECZNIE DLA KRAWĘDZI Z WIERZCHOŁKAMI JAKO GEOM:
+
+CREATE TABLE edges AS
+  SELECT
+    l.osm_id as edge_id,
+    l.highway,
+    l.name,
+    l.way as edge_way,
+    ST_Length(ST_Transform(l.way, 4326)) AS weight,
+    ST_StartPoint(l.way) as start_node,
+    ST_EndPoint(l.way) as end_node
+  FROM planet_osm_line l
+  WHERE l.highway NOT IN ('construction', 'footway', 'path', 'steps', 'track', 'cycleway', 'pedestrian', 'abandoned', 'disused')
+    AND (l.service NOT IN ('parking_aisle', 'driveway') OR l.service is null)
+    AND (l.access NOT IN ('no', 'private') or l.access is null)
+
+
 OSTATECZNIE DLA PUNKTÓW:
 
-SELECT
-  p.osm_id AS object_id,
-  p.amenity AS object_amenity,
-  ST_X(ST_Transform(p.way, 4326)) AS object_long,
-  ST_Y(ST_Transform(p.way, 4326)) AS object_lat,
-  b.id AS  edge_id,
-  ST_DISTANCE(b.way, p.way) AS distance,
-  p.way as object_way
-FROM planet_osm_point p
-CROSS JOIN LATERAL (
-  SELECT l.osm_id AS id, l.way AS way
-  FROM planet_osm_line l
-  ORDER BY l.way <-> p.way 
-  LIMIT 1
-) b
-WHERE NOT p.amenity IS null;
+CREATE TABLE objects AS
+  SELECT
+    p.osm_id AS object_id,
+    p.amenity AS object_amenity,
+    ST_X(ST_Transform(p.way, 4326)) AS object_long,
+    ST_Y(ST_Transform(p.way, 4326)) AS object_lat,
+    b.edge_id,
+    ST_DISTANCE(b.edge_way, p.way) AS object_distance_to_edge,
+    ST_DISTANCE(b.start_node, p.way) AS object_distance_to_edge_start_node,
+    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS object_distance,
+    p.way as object_way
+  FROM planet_osm_point p
+  CROSS JOIN LATERAL (
+    SELECT e.edge_id, e.edge_way, e.start_node
+    FROM edges e
+    ORDER BY e.edge_way <-> p.way 
+    LIMIT 1
+  ) b
+  WHERE NOT p.amenity IS null;
 
 
 OSTATECZNIE DLA WIELOKĄTÓW:
 
-SELECT
-  p.osm_id AS object_id,
-  p.amenity AS object_amenity,
-  ST_X(ST_Transform(ST_Centroid(p.way), 4326)) AS object_long,
-  ST_Y(ST_Transform(ST_Centroid(p.way), 4326)) AS object_lat,
-  b.id AS edge_id,
-  ST_DISTANCE(b.way, p.way) AS distance,
-  p.way as object_way
-FROM planet_osm_polygon p
-CROSS JOIN LATERAL (
-  SELECT l.osm_id AS id, l.way AS way
-  FROM planet_osm_line l
-  ORDER BY l.way <-> p.way 
-  LIMIT 1
-) b
-WHERE NOT p.amenity IS null;
-
-
-OSTATECZNIE DLA KRAWĘDZI Z WIERZCHOŁKAMI JAKO GEOM:
-
-SELECT
-  l.osm_id as edge_id,
-  l.highway,
-  l.name,
-  ST_Length(ST_Transform(l.way, 4326)) AS length,
-  ST_StartPoint(l.way) as start_point,
-  ST_EndPoint(l.way) as end_point
-FROM planet_osm_line l
-WHERE l.highway NOT IN ('construction', 'footway', 'path', 'steps', 'track', 'cycleway', 'pedestrian', 'abandoned', 'disused')
-  AND (l.service NOT IN ('parking_aisle', 'driveway') OR l.service is null)
-  AND (l.access NOT IN ('no', 'private') or l.access is null)
+INSERT INTO objects
+  SELECT
+    p.osm_id AS object_id,
+    p.amenity AS object_amenity,
+    ST_X(ST_Transform(ST_Centroid(p.way), 4326)) AS object_long,
+    ST_Y(ST_Transform(ST_Centroid(p.way), 4326)) AS object_lat,
+    b.edge_id,
+    ST_DISTANCE(b.edge_way, p.way) AS object_distance_to_edge,
+    ST_DISTANCE(b.start_node, p.way) AS object_distance_to_edge_start_node,
+    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS object_distance
+  --   p.way as object_way
+  FROM planet_osm_polygon p
+  CROSS JOIN LATERAL (
+    SELECT e.edge_id, e.edge_way, e.start_node
+    FROM edges e
+    ORDER BY e.edge_way <-> p.way 
+    LIMIT 1
+  ) b
+  WHERE NOT p.amenity IS null;
 
 
 OSTATECZNIE DLA KRAWĘDZI Z POBRANIEM ID KRAWĘDZI (ALE JEST ICH MAŁO, PRAWDOPODOBNIE NIE POKRYWAJĄ SIĘ):
@@ -115,3 +123,19 @@ CROSS JOIN LATERAL (
 WHERE l.highway NOT IN ('construction', 'footway', 'path', 'steps', 'track', 'cycleway', 'pedestrian', 'abandoned', 'disused')
   AND (l.service NOT IN ('parking_aisle', 'driveway') OR l.service is null)
   AND (l.access NOT IN ('no', 'private') or l.access is null)
+
+
+Źródła:
+ - najbliższa linia jakiegoś punktu: https://gis.stackexchange.com/questions/207592/postgis-osm-faster-query-to-find-nearest-line-of-points
+ - jakie drogi wybrać: https://skorasaurus.wordpress.com/2014/05/07/how-i-measured-clevelands-length-of-roads-with-postgis-and-osm/
+
+
+POŁĄCZONE ZE SOBĄ DROGI:
+
+SELECT e_first.edge_id, e_second.edge_id
+FROM edges e_first, edges e_second
+WHERE e_first.edge_id <> e_second.edge_id
+  AND (ST_Equals(e_first.start_node, e_second.start_node)
+  OR ST_Equals(e_first.start_node, e_second.end_node)
+  OR ST_Equals(e_first.end_node, e_second.start_node)
+  OR ST_Equals(e_first.end_node, e_second.end_node))
