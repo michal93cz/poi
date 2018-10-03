@@ -41,11 +41,12 @@ OSTATECZNIE DLA PUNKTÓW:
 
 SELECT
   p.osm_id AS object_id,
-  p.amenity AS point_amenity,
-  ST_X(ST_Transform(p.way, 4326)) AS long,
-  ST_Y(ST_Transform(p.way, 4326)) AS lat,
+  p.amenity AS object_amenity,
+  ST_X(ST_Transform(p.way, 4326)) AS object_long,
+  ST_Y(ST_Transform(p.way, 4326)) AS object_lat,
   b.id AS  edge_id,
-  ST_DISTANCE(b.way, p.way) AS distance
+  ST_DISTANCE(b.way, p.way) AS distance,
+  p.way as object_way
 FROM planet_osm_point p
 CROSS JOIN LATERAL (
   SELECT l.osm_id AS id, l.way AS way
@@ -60,11 +61,12 @@ OSTATECZNIE DLA WIELOKĄTÓW:
 
 SELECT
   p.osm_id AS object_id,
-  p.amenity AS point_amenity,
-  ST_X(ST_Centroid(p.way)) AS long,
-  ST_Y(ST_Centroid(p.way)) AS lat,
+  p.amenity AS object_amenity,
+  ST_X(ST_Transform(ST_Centroid(p.way), 4326)) AS object_long,
+  ST_Y(ST_Transform(ST_Centroid(p.way), 4326)) AS object_lat,
   b.id AS edge_id,
-  ST_DISTANCE(b.way, p.way) AS distance
+  ST_DISTANCE(b.way, p.way) AS distance,
+  p.way as object_way
 FROM planet_osm_polygon p
 CROSS JOIN LATERAL (
   SELECT l.osm_id AS id, l.way AS way
