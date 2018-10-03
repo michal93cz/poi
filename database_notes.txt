@@ -1,0 +1,115 @@
+1. Wszystkie drogi (zródło https://skorasaurus.wordpress.com/2014/05/07/how-i-measured-clevelands-length-of-roads-with-postgis-and-osm/):
+  select highway, name, way, st_length(st_transform(way,3637)) AS length FROM planet_osm_line WHERE highway NOT IN ('construction', 'footway', 'path', 'steps', 'track', 'cycleway', 'pedestrian', 'abandoned', 'disused') AND (service NOT IN ('parking_aisle', 'driveway') OR service is null) AND (access NOT IN ('no', 'private') or access is null)
+
+  srid 3637 ??
+
+select * from planet_osm_line where osm_id=376047788
+
+2. pobranie wszystkich obiektów, które mają jakieś znaczenie:
+  select * from planet_osm_point where not amenity is null
+  select * from planet_osm_polygon where not amenity is null
+
+3. pobranie wszystkich punktów wraz z ich najbliższą drogą i odległością do niej (może ST_MaxDistance?):
+  SELECT p.osm_id AS point_id, p.amenity AS point_amenity, b.id AS road_id, ST_DISTANCE(b.way, p.way) AS distance
+  FROM planet_osm_point p
+  CROSS JOIN LATERAL (
+      SELECT l.osm_id AS id, l.way AS way
+      FROM planet_osm_line l
+      ORDER BY l.way <-> p.way 
+      LIMIT 1
+  ) b
+  WHERE not p.amenity is null;
+
+4. pobranie wszystkich złożonych obiektów wraz z ich najbliższą drogą i odległością do niej (może ST_MaxDistance?):
+  SELECT p.osm_id AS point_id, p.amenity AS point_amenity, b.id AS road_id, ST_DISTANCE(b.way, p.way) AS distance
+  FROM planet_osm_polygon p
+  CROSS JOIN LATERAL (
+      SELECT l.osm_id AS id, l.way AS way
+      FROM planet_osm_line l
+      ORDER BY l.way <-> p.way 
+      LIMIT 1
+  ) b
+  WHERE not p.amenity is null;
+
+
+5. wybranie wszystkich punktów z x i y:
+  select p.osm_id as point_id, p.amenity, ST_X(ST_Transform(p.way, 4326)) as long, ST_Y(ST_Transform(p.way, 4326)) as lat from planet_osm_point p where not amenity is null
+
+
+
+OSTATECZNIE DLA PUNKTÓW:
+
+SELECT
+  p.osm_id AS object_id,
+  p.amenity AS point_amenity,
+  ST_X(ST_Transform(p.way, 4326)) AS long,
+  ST_Y(ST_Transform(p.way, 4326)) AS lat,
+  b.id AS  edge_id,
+  ST_DISTANCE(b.way, p.way) AS distance
+FROM planet_osm_point p
+CROSS JOIN LATERAL (
+  SELECT l.osm_id AS id, l.way AS way
+  FROM planet_osm_line l
+  ORDER BY l.way <-> p.way 
+  LIMIT 1
+) b
+WHERE NOT p.amenity IS null;
+
+
+OSTATECZNIE DLA WIELOKĄTÓW:
+
+SELECT
+  p.osm_id AS object_id,
+  p.amenity AS point_amenity,
+  ST_X(ST_Centroid(p.way)) AS long,
+  ST_Y(ST_Centroid(p.way)) AS lat,
+  b.id AS edge_id,
+  ST_DISTANCE(b.way, p.way) AS distance
+FROM planet_osm_polygon p
+CROSS JOIN LATERAL (
+  SELECT l.osm_id AS id, l.way AS way
+  FROM planet_osm_line l
+  ORDER BY l.way <-> p.way 
+  LIMIT 1
+) b
+WHERE NOT p.amenity IS null;
+
+
+OSTATECZNIE DLA KRAWĘDZI Z WIERZCHOŁKAMI JAKO GEOM:
+
+SELECT
+  l.osm_id as edge_id,
+  l.highway,
+  l.name,
+  ST_Length(ST_Transform(l.way, 4326)) AS length,
+  ST_StartPoint(l.way) as start_point,
+  ST_EndPoint(l.way) as end_point
+FROM planet_osm_line l
+WHERE l.highway NOT IN ('construction', 'footway', 'path', 'steps', 'track', 'cycleway', 'pedestrian', 'abandoned', 'disused')
+  AND (l.service NOT IN ('parking_aisle', 'driveway') OR l.service is null)
+  AND (l.access NOT IN ('no', 'private') or l.access is null)
+
+
+OSTATECZNIE DLA KRAWĘDZI Z POBRANIEM ID KRAWĘDZI (ALE JEST ICH MAŁO, PRAWDOPODOBNIE NIE POKRYWAJĄ SIĘ):
+
+SELECT
+  l.osm_id as edge_id,
+  l.highway,
+  l.name,
+  ST_Length(ST_Transform(l.way, 4326)) AS length,
+  st.id as start_point_id,
+  en.id as end_point_id
+FROM planet_osm_line l
+CROSS JOIN LATERAL (
+  SELECT pst.osm_id AS id
+  FROM planet_osm_point pst
+  WHERE ST_Equals(ST_StartPoint(l.way), pst.way)
+) st
+CROSS JOIN LATERAL (
+  SELECT pen.osm_id AS id
+  FROM planet_osm_point pen
+  WHERE ST_Equals(ST_EndPoint(l.way), pen.way)
+) en
+WHERE l.highway NOT IN ('construction', 'footway', 'path', 'steps', 'track', 'cycleway', 'pedestrian', 'abandoned', 'disused')
+  AND (l.service NOT IN ('parking_aisle', 'driveway') OR l.service is null)
+  AND (l.access NOT IN ('no', 'private') or l.access is null)
