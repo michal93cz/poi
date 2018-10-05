@@ -45,7 +45,7 @@ CREATE TABLE edges AS
     l.highway,
     l.name,
     l.way as edge_way,
-    ST_Length(ST_Transform(l.way, 4326)) AS weight,
+    ST_Length(l.way) AS weight,
     ST_StartPoint(l.way) as start_node,
     ST_EndPoint(l.way) as end_node
   FROM planet_osm_line l
@@ -54,18 +54,19 @@ CREATE TABLE edges AS
     AND (l.access NOT IN ('no', 'private') or l.access is null)
 
 
+
 OSTATECZNIE DLA PUNKTÓW:
 
 CREATE TABLE objects AS
   SELECT
     p.osm_id AS object_id,
     p.amenity AS object_amenity,
-    ST_X(ST_Transform(p.way, 4326)) AS object_long,
-    ST_Y(ST_Transform(p.way, 4326)) AS object_lat,
+    ST_X(p.way) AS object_long,
+    ST_Y(p.way) AS object_lat,
     b.edge_id,
     ST_DISTANCE(b.edge_way, p.way) AS object_distance_to_edge,
     ST_DISTANCE(b.start_node, p.way) AS object_distance_to_edge_start_node,
-    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS object_distance,
+    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS pos,
     p.way as object_way
   FROM planet_osm_point p
   CROSS JOIN LATERAL (
@@ -77,18 +78,19 @@ CREATE TABLE objects AS
   WHERE NOT p.amenity IS null;
 
 
+
 OSTATECZNIE DLA WIELOKĄTÓW:
 
 INSERT INTO objects
   SELECT
     p.osm_id AS object_id,
     p.amenity AS object_amenity,
-    ST_X(ST_Transform(ST_Centroid(p.way), 4326)) AS object_long,
-    ST_Y(ST_Transform(ST_Centroid(p.way), 4326)) AS object_lat,
+    ST_X(ST_Centroid(p.way)) AS object_long,
+    ST_Y(ST_Centroid(p.way)) AS object_lat,
     b.edge_id,
     ST_DISTANCE(b.edge_way, p.way) AS object_distance_to_edge,
     ST_DISTANCE(b.start_node, p.way) AS object_distance_to_edge_start_node,
-    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS object_distance
+    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS pos
   --   p.way as object_way
   FROM planet_osm_polygon p
   CROSS JOIN LATERAL (
@@ -98,6 +100,11 @@ INSERT INTO objects
     LIMIT 1
   ) b
   WHERE NOT p.amenity IS null;
+
+
+
+
+
 
 
 OSTATECZNIE DLA KRAWĘDZI Z POBRANIEM ID KRAWĘDZI (ALE JEST ICH MAŁO, PRAWDOPODOBNIE NIE POKRYWAJĄ SIĘ):
@@ -130,6 +137,7 @@ WHERE l.highway NOT IN ('construction', 'footway', 'path', 'steps', 'track', 'cy
  - jakie drogi wybrać: https://skorasaurus.wordpress.com/2014/05/07/how-i-measured-clevelands-length-of-roads-with-postgis-and-osm/
 
 
+
 POŁĄCZONE ZE SOBĄ DROGI:
 
 SELECT e_first.edge_id, e_second.edge_id
@@ -139,3 +147,10 @@ WHERE e_first.edge_id <> e_second.edge_id
   OR ST_Equals(e_first.start_node, e_second.end_node)
   OR ST_Equals(e_first.end_node, e_second.start_node)
   OR ST_Equals(e_first.end_node, e_second.end_node))
+
+
+
+DODANIE KOLUMNY Z OBIEKTAMI DO TABELI KRAWĘDZI:
+
+ALTER TABLE edges
+  ADD COLUMN snapped_objects bigint[];

@@ -21,7 +21,7 @@
             "name": "Python: Main algorithm",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/main_algorithm.py"
+            "program": "${workspaceFolder}/main_algorithm_postgres.py"
         },
         {
             "name": "Python: Attach",

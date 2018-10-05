@@ -1,23 +1,16 @@
 import psycopg2
+import psycopg2.extras
+from pprint import pprint
 
 
-conn = psycopg2.connect("dbname=moskwa user=postgres password=postgres")
-cur = conn.cursor()
+conn = psycopg2.connect("dbname=poznan user=postgres password=postgres")
+cur = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
 
-print('PostgreSQL database version:')
-cur.execute('SELECT version()')
+cur.execute('SELECT * FROM edges')
 
-db_version = cur.fetchone()
-print(db_version)
-
-cur.execute('SELECT PostGIS_full_version()')
-
-postgis_version = cur.fetchone()
-print(postgis_version)
-
-cur.execute('select count(*) FROM planet_osm_point where ((tags->\'man_made\') = \'tower\')')
-
-count = cur.fetchone()
-print(count)
+edges = cur.fetchall()
+print(edges[0].edge_id)
+# for edge in edges:
+#   print(edge[0])
 
 cur.close()
