@@ -90,8 +90,8 @@ INSERT INTO objects
     b.edge_id,
     ST_DISTANCE(b.edge_way, p.way) AS object_distance_to_edge,
     ST_DISTANCE(b.start_node, p.way) AS object_distance_to_edge_start_node,
-    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS pos
-  --   p.way as object_way
+    SQRT(POWER(ST_DISTANCE(b.start_node, p.way), 2.0) - POWER(ST_DISTANCE(b.edge_way, p.way), 2.0)) + ST_DISTANCE(b.edge_way, p.way) AS pos,
+    ST_Centroid(p.way) as object_way
   FROM planet_osm_polygon p
   CROSS JOIN LATERAL (
     SELECT e.edge_id, e.edge_way, e.start_node
@@ -154,3 +154,7 @@ DODANIE KOLUMNY Z OBIEKTAMI DO TABELI KRAWĘDZI:
 
 ALTER TABLE edges
   ADD COLUMN snapped_objects bigint[];
+
+
+TESTOWE ZBIORY:
+  CREATE TABLE objects_test_20 AS SELECT * FROM objects LIMIT 20

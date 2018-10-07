@@ -7,7 +7,11 @@ def neighbor_objects_refining(tuple, threshold):
   STC = []
 
   e_objects = get_edge_objects(tuple[0])
+  # pprint(e_objects)
+
+  # print('-------------------------------')
   e_prim_objects = get_edge_objects(tuple[1])
+  # pprint(e_prim_objects)
   e = get_edge_by_id(tuple[0])
   e_prim = get_edge_by_id(tuple[1])
 
@@ -31,6 +35,6 @@ def neighbor_objects_refining(tuple, threshold):
         ND = ED + e.weight - object_i.pos + e_prim.weight - object_j.pos
 
       if ND <= threshold:
-         STC.append((object_i.object_amenity, object_j.object_amenity, ND))
+         STC.append((object_i, object_j, ND))
 
   return STC
