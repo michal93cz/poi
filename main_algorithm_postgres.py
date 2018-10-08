@@ -8,16 +8,8 @@ from edge_expansion_postgres import edge_expansion
 from neighbor_objects_refining_postgres import neighbor_objects_refining
 from utils import get_PRs, get_PIs
 
-conn = psycopg2.connect("dbname=poznan user=postgres password=postgres")
-cur = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
 
-cur.execute('SELECT * FROM edges LIMIT 13')
-
-edges = cur.fetchall()
-
-threshold = 200
-
-def ens(edges, threshold): 
+def ens(edges, threshold, cursor): 
   ST = []
 
   i = 0
@@ -25,18 +17,30 @@ def ens(edges, threshold):
     print(i)
     i += 1
 
-    EDC = edge_expansion(edge, threshold)
+    EDC = edge_expansion(edge, threshold, cursor)
 
     for tuple in EDC:
       if tuple[3] <= threshold:
-        STC = neighbor_objects_refining(tuple, threshold)
+        STC = neighbor_objects_refining(tuple, threshold, cursor)
         ST.append(STC)
 
   return list(itertools.chain.from_iterable(ST))
 
-collocations = ens(edges, threshold)
+conn = psycopg2.connect("dbname=detroit user=postgres password=postgres")
+cur = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
 
-pprint(collocations)
+cur.execute('SELECT * FROM edges')
+
+edges = cur.fetchall()
+threshold = 200
+
+collocations = ens(edges, threshold, cur)
+cur.close()
+
+# pprint(collocations)
 
 PRs = get_PRs(collocations)
-pprint(get_PIs(PRs))
+
+PIs = get_PIs(PRs)
+for PI in PIs[:50]:
+  print(PI)

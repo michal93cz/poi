@@ -11,7 +11,7 @@ def manhattan_measure(first_object, second_object):
   return abs(second_object.object_long - first_object.object_long) + abs(second_object.object_lat - first_object.object_lat)
 
 def main_algorithm_manhattan(treshold):
-  conn = psycopg2.connect("dbname=poznan user=postgres password=postgres")
+  conn = psycopg2.connect("dbname=detroit user=postgres password=postgres")
   cur = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
 
   cur.execute('SELECT * FROM objects')
@@ -46,4 +46,6 @@ result = main_algorithm_manhattan(treshold)
 PRs = get_PRs(result)
 # pprint(PRs)
 
-pprint(get_PIs(PRs))
+PIs = get_PIs(PRs) 
+for PI in PIs[:50]:
+  print(PI)

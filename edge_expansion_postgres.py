@@ -3,10 +3,10 @@ from collections import namedtuple
 from recordtype import recordtype
 from pprint import pprint
 
-from utils import search_in_array_of_dicts, get_node_edges, get_edge_by_id
+from utils import get_node_edges, get_edge_by_id
 
 
-def edge_expansion(edge, threshold):
+def edge_expansion(edge, threshold, cursor):
   EDC = []
 
   # added for avoid move back in network during searching
@@ -27,11 +27,11 @@ def edge_expansion(edge, threshold):
       node_min = heapq.heappop(H)[1]
       visited_nodes.append(node_min.geom)
 
-      for edge_prim_record in get_node_edges(node_min.geom):
+      for edge_prim_record in get_node_edges(node_min.geom, cursor):
         edge_prim_id = edge_prim_record.edge_id
 
         if not edge_prim_id in visited_edges:
-          edge_prim = get_edge_by_id(edge_prim_id)
+          edge_prim = get_edge_by_id(edge_prim_id, cursor)
           visited_edges.append(edge_prim_id)
 
           if node_geom == edge.start_node and node_min.geom == edge_prim.start_node:
