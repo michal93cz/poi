@@ -20,13 +20,14 @@ def ens(edges, threshold, cursor):
     EDC = edge_expansion(edge, threshold, cursor)
 
     for tuple in EDC:
+      # print(tuple)
       if tuple[3] <= threshold:
         STC = neighbor_objects_refining(tuple, threshold, cursor)
         ST.append(STC)
 
   return list(itertools.chain.from_iterable(ST))
 
-conn = psycopg2.connect("dbname=detroit user=postgres password=postgres")
+conn = psycopg2.connect("dbname=moskwa user=postgres password=postgres")
 cur = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
 
 cur.execute('SELECT * FROM edges')
@@ -40,7 +41,7 @@ cur.close()
 # pprint(collocations)
 
 PRs = get_PRs(collocations)
-
 PIs = get_PIs(PRs)
-for PI in PIs[:50]:
+
+for PI in PIs[:20]:
   print(PI)
