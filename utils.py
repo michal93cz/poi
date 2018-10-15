@@ -44,7 +44,7 @@ def get_edge_objects(edge_id, cur):
   return objects
 
 def get_objects_amenity_count():
-  conn = psycopg2.connect("dbname=moskwa user=postgres password=postgres")
+  conn = psycopg2.connect("dbname=moskwa_large user=postgres password=postgres")
   cur = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
   cur.execute('SELECT object_amenity, COUNT(*) FROM objects GROUP BY object_amenity')
@@ -55,8 +55,8 @@ def get_objects_amenity_count():
 
   return dict(amenities)
 
-def get_PIs(PRs):
-  amenities = get_objects_amenity_count()
+def get_PIs(PRs, amenities):
+  # amenities = get_objects_amenity_count()
   result = {}
 
   for PR in PRs:
@@ -75,9 +75,9 @@ def get_PIs(PRs):
 
   return sorted(result.items(), key=lambda x: x[1], reverse=True)
 
-def get_PRs(collocations):
+def get_PRs(collocations, amenities):
   dictionary = {}
-  amenities = get_objects_amenity_count()
+  # amenities = get_objects_amenity_count()
 
   for collocation in collocations:
     key = (collocation[0].object_amenity, collocation[1].object_amenity)

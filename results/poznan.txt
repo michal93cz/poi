@@ -1,4 +1,9 @@
+LARGE: 20km x 20km
+
+
 Edges: 1310; Objects: 2032
+
+Liczbe cech przestrzennych?
 
 ENS 200m:
 

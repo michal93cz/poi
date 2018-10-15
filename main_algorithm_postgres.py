@@ -3,10 +3,11 @@ import psycopg2
 import psycopg2.extras
 import numpy
 import itertools
+from timeit import default_timer as timer
 
 from edge_expansion_postgres import edge_expansion
 from neighbor_objects_refining_postgres import neighbor_objects_refining
-from utils import get_PRs, get_PIs
+from utils import get_PRs, get_PIs, get_objects_amenity_count
 
 
 def ens(edges, threshold, cursor): 
@@ -27,21 +28,31 @@ def ens(edges, threshold, cursor):
 
   return list(itertools.chain.from_iterable(ST))
 
-conn = psycopg2.connect("dbname=moskwa user=postgres password=postgres")
+conn = psycopg2.connect("dbname=moskwa_large user=postgres password=postgres")
 cur = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
 
 cur.execute('SELECT * FROM edges')
 
 edges = cur.fetchall()
+amenities = get_objects_amenity_count()
 threshold = 200
 
+start = timer()
 collocations = ens(edges, threshold, cur)
+end = timer()
+duration = end - start
+
 cur.close()
 
-# pprint(collocations)
+f = open("./results/moskwa_large_ens.txt", "w+")
+f.write('Duration: %d s \r\n' % duration)
 
-PRs = get_PRs(collocations)
-PIs = get_PIs(PRs)
+PRs = get_PRs(collocations, amenities)
+PIs = get_PIs(PRs, amenities)
 
-for PI in PIs[:20]:
-  print(PI)
+f.write('Number of collocations: %d\r\n' % len(PIs))
+
+for PI in PIs:
+  f.write(str(PI) + '\n')
+
+f.close()

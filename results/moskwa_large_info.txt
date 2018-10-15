@@ -1,0 +1,5 @@
+Edges: 31126
+Objects: 24313
+Size: ok 15km x 15km
+Features: 135
+

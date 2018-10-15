@@ -17,15 +17,15 @@ def neighbor_objects_refining(tuple, threshold, cursor):
 
 
   # my invention:
-  e_objects_copy = e_objects.copy()
-  for object in e_objects:
-    e_objects_copy.remove(object)
+  # e_objects_copy = e_objects.copy()
+  # for object in e_objects:
+  #   e_objects_copy.remove(object)
 
-    for object_prim in e_objects_copy:
-      ND = abs(object.pos - object_prim.pos)
+  #   for object_prim in e_objects_copy:
+  #     ND = abs(object.pos - object_prim.pos)
 
-      if ND <= threshold:
-         STC.append((object, object_prim, ND))
+  #     if ND <= threshold:
+  #        STC.append((object, object_prim, ND))
 
 
   for object_i in e_objects:
