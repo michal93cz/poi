@@ -1,5 +1,3 @@
-LARGE: ok 15km x 15km
-
 Edges: 1014; Objects: 1272
 
 ENS 200m:

@@ -28,14 +28,14 @@ def ens(edges, threshold, cursor):
 
   return list(itertools.chain.from_iterable(ST))
 
-conn = psycopg2.connect("dbname=moskwa_large user=postgres password=postgres")
+conn = psycopg2.connect("dbname=detroit_large user=postgres password=postgres")
 cur = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
 
 cur.execute('SELECT * FROM edges')
 
 edges = cur.fetchall()
 amenities = get_objects_amenity_count()
-threshold = 200
+threshold = 500
 
 start = timer()
 collocations = ens(edges, threshold, cur)
@@ -44,7 +44,7 @@ duration = end - start
 
 cur.close()
 
-f = open("./results/moskwa_large_ens.txt", "w+")
+f = open("./results/detroit_large_ens.txt", "w+")
 f.write('Duration: %d s \r\n' % duration)
 
 PRs = get_PRs(collocations, amenities)

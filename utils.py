@@ -44,7 +44,7 @@ def get_edge_objects(edge_id, cur):
   return objects
 
 def get_objects_amenity_count():
-  conn = psycopg2.connect("dbname=moskwa_large user=postgres password=postgres")
+  conn = psycopg2.connect("dbname=detroit_large user=postgres password=postgres")
   cur = conn.cursor(cursor_factory = psycopg2.extras.DictCursor)
 
   cur.execute('SELECT object_amenity, COUNT(*) FROM objects GROUP BY object_amenity')
