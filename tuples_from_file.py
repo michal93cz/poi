@@ -8,7 +8,7 @@ with open("tuples.txt","r") as infile:
     tupleList.append(createTuple(line))
 
 resultList = []
-f = open("./results_without_repeats/detroit_manhattan_200m.txt", "w+")
+f = open("./results_without_repeats/moskwa_ens_500m.txt", "w+")
 for key, value in tupleList:
   if key[0] != key[1]:
     f.write('(' + str(key[0]) + ', ' + str(key[1]) + ') ' + str(value) + '\n')
